@@ -1,0 +1,152 @@
+me: What is the purpose of the parse_weather_question() function?
+ai: The purpose of the parse_weather_question() function is to analyze a user’s natural-language weather question (like “What is the temperature of Bangladesh tomorrow?”) and extract key details from it — specifically:
+
+Location – where the user is asking about (e.g., “Bangladesh”).
+
+Time period – when they are asking about (e.g., “today,” “tomorrow,” “next 3 days”).
+
+Attribute – what type of weather information they want (e.g., “temperature,” “rain,” “forecast”).
+
+🧠 In simple terms:
+It converts a plain English question into a structured dictionary that a program can understand and use to fetch weather data.
+
+Example:
+
+parse_weather_question("What is the temperature of Bangladesh tomorrow?")
+
+
+➡️ Returns:
+
+{
+  "location": "Bangladesh",
+  "time_period": "tomorrow",
+  "attribute": "temperature"
+}
+
+
+So, its main purpose is to interpret and organize user input into usable information for an automated weather system or chatbot.
+
+me: Which Python module is imported to work with regular expressions?
+What type of value does the function return?
+ai: The Python module imported to work with regular expressions is re.
+It’s used for searching and matching text patterns (like finding a location name or date in a question).
+
+Example from the code:
+
+import re
+The function parse_weather_question() returns a dictionary (dict).
+
+That dictionary contains structured information extracted from the question, such as:
+
+{
+  "location": "Bangladesh",
+  "time_period": "today",
+  "attribute": "temperature"
+}
+
+
+So, its return type is a Python dictionary.
+
+me: How to detect the time period “tomorrow”?
+ai: The function detects the word “tomorrow” by checking if it appears anywhere in the user’s question string after converting it to lowercase.
+
+Here’s the relevant part of the code:
+
+if "tomorrow" in q:
+    result["time_period"] = "tomorrow"
+
+🧠 Step-by-step explanation:
+
+The user’s question is first converted to lowercase:
+
+q = question.lower()
+
+
+This ensures that words like “Tomorrow” or “TOMORROW” are also recognized.
+
+The code then checks:
+
+If the word "tomorrow" exists anywhere inside the string q.
+
+If found, it updates the result dictionary:
+
+result["time_period"] = "tomorrow"
+
+✅ Example:
+parse_weather_question("What is the weather in Perth tomorrow?")
+
+
+Output:
+
+{
+  "location": "Perth",
+  "time_period": "tomorrow",
+  "attribute": "general"
+}
+me: what to search by regular expression
+ai: Step-by-step breakdown of what it searches for
+Part	Meaning	Example it catches
+\b	Word boundary → makes sure it starts cleanly at a word (not mid-word)	in Dhaka ✅
+`(?:in	of	at
+\s+	One or more spaces after the preposition	space between “in” and “Dhaka”
+([a-z][a-z\s\-\’\'\.]+?)	Capture group → this grabs the actual location name (letters, spaces, hyphens, apostrophes, etc.)	south australia, new york, st. louis
+`(?=\s+(?:today	tomorrow	next\b)
+✅ In plain English:
+
+This regex tells Python to:
+
+“Find any location name that comes after words like ‘in’, ‘of’, ‘at’, or ‘for’,
+and stop capturing right before time-related words (like ‘today’, ‘tomorrow’, or ‘next’) or the end of the question.”
+
+
+me: What string operations are used to clean punctuation from the location text?
+ai: The function uses the string method .strip() and the string method combination .split() + .capitalize() to clean and format the location text after extracting it with regex.
+
+Here’s the relevant code:
+
+loc = loc_match.group(1).strip(" ?.!;:,")
+result["location"] = " ".join(w.capitalize() for w in loc.split())
+
+🧠 Step-by-step explanation:
+
+loc_match.group(1)
+
+Takes the captured location text from the regular expression (for example: "bangladesh," or "south australia?").
+
+.strip(" ?.!;:,")
+
+Removes unwanted punctuation or spaces from both ends of the string.
+
+It removes characters like:
+space, ?, ., !, ;, :, ,
+
+Example:
+"bangladesh," → "bangladesh"
+" south australia? " → "south australia"
+
+.split() and .capitalize() inside a list comprehension:
+
+" ".join(w.capitalize() for w in loc.split())
+
+
+.split() → breaks the text into separate words.
+"south australia" → ["south", "australia"]
+
+w.capitalize() → makes the first letter uppercase for each word.
+→ ["South", "Australia"]
+
+" ".join(...) → joins them back into one properly formatted string.
+→ "South Australia"
+
+✅ Final Result Example:
+
+Input:  " south australia? "
+Output: "South Australia"
+
+💡 In short:
+
+.strip() → cleans punctuation/spaces
+
+.split() + .capitalize() → formats each word nicely
+
+" ".join() → puts the cleaned words back together
