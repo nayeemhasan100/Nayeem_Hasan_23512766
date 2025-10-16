@@ -1,4 +1,4 @@
-ne: what is the install process of fetch my weather and hands on ai
+me: what is the install process of fetch my weather and hands on ai
 ai: You already used:
 
 pip install fetch-my-weather
