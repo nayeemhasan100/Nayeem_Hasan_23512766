@@ -1,3 +1,8 @@
+----------------------------------
+Tool: ChatGPT
+Date: 2025-10-16
+----------------------------------
+
 me: what is the install process of fetch my weather and hands on ai
 ai: You already used:
 
