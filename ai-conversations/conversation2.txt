@@ -1,0 +1,448 @@
+me: how to use fetch-my-weather api
+ai: Here’s a detailed guide on how to use the fetch-my-weather API (i.e. the Python library) — what functions it provides, what parameters you can pass, and example code.
+
+This is based on its official PyPI / GitHub documentation. 
+PyPI
++2
+GitHub
++2
+
+🧰 What fetch-my-weather offers
+
+It’s a wrapper around the wttr.in weather service, with added conveniences: caching, error handling, multiple formats (JSON, text, PNG), mock mode, etc. 
+GitHub
++2
+PyPI
++2
+
+The main function is get_weather(...). 
+GitHub
++2
+GitHub
++2
+
+There are also configuration functions:
+  • set_cache_duration(seconds) — how long to keep results cached 
+GitHub
++1
+
+  • clear_cache() — clear the cache 
+GitHub
++1
+
+  • set_user_agent(...) — change the HTTP User-Agent header 
+GitHub
++1
+
+  • set_mock_mode(enabled) — set global mock mode for testing 
+GitHub
++1
+
+🔍 Signature and parameters of get_weather
+
+Here is a summarized version of its signature and what each parameter does (from the LLM guide) 
+GitHub
++1
+:
+
+get_weather(
+    location: str = "",
+    units: str = "",
+    view_options: str = "",
+    lang: Optional[str] = None,
+    is_png: bool = False,        # deprecated in favor of format="png"
+    png_options: str = "",
+    is_moon: bool = False,
+    moon_date: Optional[str] = None,
+    moon_location_hint: Optional[str] = None,
+    format: Literal["text", "json", "raw_json", "png"] = "json",
+    use_mock: Optional[bool] = None,
+    with_metadata: bool = False
+) -> Union[str, bytes, dict, WeatherResponse, ResponseWrapper]
+
+
+Here’s what the key parameters mean:
+
+Parameter	Type	Description
+location	str	The location to fetch weather for (city name, airport code, coordinates, etc.). If empty, resolves by your IP.
+units	str	Units system: "m" (metric, default), "u" (US/imperial), "M" (wind in m/s)
+view_options	str	Controls how many forecast days, narrow vs expanded view, etc.
+lang	str	Language code for output (e.g. "es", "fr")
+format	"text" / "json" / "raw_json" / "png"	Output format: natural text, Pydantic model, raw dict, or PNG image
+is_moon	bool	If True, instead of weather, you get moon phase data
+moon_date	str	When is_moon=True, specify which date (format “YYYY-MM-DD”)
+moon_location_hint	str	Hint about location when getting moon phase (for more accurate timing)
+png_options	str	Options for PNG images (padding, transparency, etc.)
+use_mock	bool	Override whether to use mock data (for testing)
+with_metadata	bool	If True, returns a wrapper with both data and metadata (e.g. whether it came from cache, errors, etc.)
+
+Return types:
+
+If format="json" (default), you get a WeatherResponse Pydantic model. 
+GitHub
++2
+GitHub
++2
+
+If format="raw_json", you get a plain Python dict. 
+GitHub
++1
+
+If format="text", you get weather output as a str. 
+GitHub
++2
+GitHub
++2
+
+If format="png", you get bytes (binary PNG data). 
+GitHub
++2
+GitHub
++2
+
+If with_metadata=True, you get a ResponseWrapper containing .data (the actual data) plus metadata (e.g. is_cached, error_type, etc.) 
+GitHub
++1
+
+If there’s an error and you aren’t using metadata, sometimes the function returns a string like "Error: …". 
+GitHub
++2
+GitHub
++2
+
+🛠️ Examples of using get_weather
+
+Here are some practical examples in Python.
+
+1. Basic — default behavior (your current location, JSON)
+import fetch_my_weather
+
+weather = fetch_my_weather.get_weather()
+# This is a WeatherResponse model (Pydantic)
+# Access via attributes:
+temp_c = weather.current_condition[0].temp_C
+desc = weather.current_condition[0].weatherDesc[0].value
+print(f"Temperature: {temp_c}°C, Condition: {desc}")
+
+2. Specifying a city, text format
+from fetch_my_weather import get_weather
+
+text = get_weather(location="London", format="text")
+print(text)
+
+
+This returns something like:
+
+London: 🌦 + 15°C with drizzle
+...
+
+3. Raw JSON (dict) access
+raw = get_weather(location="Perth, Australia", format="raw_json")
+curr = raw["current_condition"][0]
+print("Temp:", curr["temp_C"], "°C")
+print("Description:", curr["weatherDesc"][0]["value"])
+
+4. PNG image output
+png_data = get_weather(location="Sydney", format="png")
+with open("sydney_weather.png", "wb") as f:
+    f.write(png_data)
+
+
+You might also pass png_options (e.g. transparency, padding) if needed. 
+GitHub
++1
+
+5. Moon phase instead of weather
+# Get current moon phase
+moon = get_weather(is_moon=True)
+print(moon)
+
+# For a specific date
+moon_christmas = get_weather(is_moon=True, moon_date="2025-12-25")
+print(moon_christmas)
+
+6. Using metadata (caching info, error info)
+from fetch_my_weather import get_weather, ResponseWrapper
+
+resp = get_weather(location="Paris", with_metadata=True)
+if isinstance(resp, ResponseWrapper):
+    meta = resp.metadata
+    print("Was from cache:", meta.is_cached)
+    print("Was mock:", meta.is_mock)
+    print("Any error:", meta.error_message)
+
+    data = resp.data  # actual WeatherResponse or dict
+    curr = data.current_condition[0]
+    print("Temp:", curr.temp_C)
+
+7. Adjust cache behavior & mock mode
+import fetch_my_weather
+
+# Set caching to 30 minutes (1800 sec)
+fetch_my_weather.set_cache_duration(1800)
+
+# Clear cache manually
+fetch_my_weather.clear_cache()
+
+# Use mock mode globally (for development)
+fetch_my_weather.set_mock_mode(True)
+
+# Use mock mode just for this request
+weather = fetch_my_weather.get_weather(location="Tokyo", use_mock=True)
+
+
+me: how to use location on fet-my-weather api request
+ai: let’s go step by step on how to use the location parameter in the fetch-my-weather API so you can request weather for any city, area, or coordinate — including Bangladeshi or Australian locations.
+
+⚙️ Basic Syntax
+from fetch_my_weather import get_weather
+
+data = get_weather(location="Dhaka")
+print(data)
+
+
+✅ This line fetches real-time weather for Dhaka using the public wttr.in API under the hood.
+
+🗺️ Supported Location Formats
+
+You can use many different formats for the location parameter:
+
+Type	Example	Description
+City name	"Dhaka", "Perth", "London"	Most common; automatically resolved
+City + Country	"Paris, France"	Helps when cities share the same name
+Coordinates	"23.8103,90.4125"	Latitude,Longitude (useful for precise locations)
+Airport code	"DAC", "PER"	Uses IATA airport codes
+Region/State	"California", "Western Australia"	Broader area forecast
+Special keywords	"moon", "auto:ip"	“moon” = moon phase; “auto:ip” = detect by IP
+🧠 Examples in Action
+1️⃣ City name only
+from fetch_my_weather import get_weather
+
+weather = get_weather(location="Dhaka")
+print(weather.current_condition[0].temp_C, "°C")
+
+2️⃣ City + Country for accuracy
+from fetch_my_weather import get_weather
+
+weather = get_weather(location="Perth, Australia")
+print(weather.current_condition[0].weatherDesc[0].value)
+
+3️⃣ Using Coordinates
+weather = get_weather(location="23.8103,90.4125")  # Dhaka coordinates
+print("Dhaka:", weather.current_condition[0].temp_C, "°C")
+
+4️⃣ Auto-detect by IP
+weather = get_weather(location="auto:ip")
+print("Detected location:", weather.nearest_area[0].areaName[0].value)
+print("Temperature:", weather.current_condition[0].temp_C, "°C")
+
+
+This automatically finds your location using your public IP.
+
+5️⃣ Handling Invalid or Unknown Locations
+weather = get_weather(location="Atlantis", with_metadata=True)
+
+if weather.metadata.error_message:
+    print("Error:", weather.metadata.error_message)
+else:
+    print(weather.data.current_condition[0].temp_C)
+
+
+If the city isn’t found, the function returns an error message rather than crashing.
+
+
+me: how to get detailed data from this api
+like hourly for a perticular date
+ai: Great question! Short answer:
+
+Yes: you can get hourly data from fetch-my-weather, but only for the next ~3 days (3-hour steps).
+
+No: it doesn’t provide arbitrary historical hourly data (or far-future dates). For historical/by-date needs, use a dedicated API (e.g., Meteostat). 
+GitHub
++2
+PyPI
++2
+
+Here’s how to pull hourly for a particular date (today/tomorrow/within 3-day window) and filter it:
+
+from datetime import date
+from fetch_my_weather import get_weather
+
+# 1) Get raw JSON so it's easy to slice
+data = get_weather(location="Perth, Australia", format="raw_json")  # wttr.in JSON (includes hourly)
+
+# 2) Choose the target date (YYYY-MM-DD) that is within the 3-day forecast
+target = date.today().isoformat()  # e.g., '2025-10-17'
+
+# 3) Find that day in the 3-day forecast and read its 3-hourly slots
+day = next((d for d in data["weather"] if d["date"] == target), None)
+if not day:
+    raise ValueError(f"No hourly data for {target} (only ~3 days available).")
+
+# Each entry is a 3-hour step: "time" ∈ {"0","300","600",...,"2100"}
+hourly = day["hourly"]
+
+# Example: pick a specific hour (nearest 3-hour slot)
+def nearest_slot(hhmm):
+    # hhmm like '1400' -> nearest among 0,300,600,...,2100
+    want = int(hhmm)
+    slots = [0,300,600,900,1200,1500,1800,2100]
+    return str(min(slots, key=lambda s: abs(s - want)))
+
+wanted = nearest_slot("1500")  # around 3pm
+slot = min(hourly, key=lambda h: abs(int(h["time"]) - int(wanted)))
+
+print({
+    "time": slot["time"],                 # e.g., "1500" (3pm)
+    "temp_C": slot["tempC"],
+    "feels_like_C": slot["FeelsLikeC"],
+    "desc": slot["weatherDesc"][0]["value"],
+    "humidity": slot["humidity"],
+    "wind_kmph": slot["windspeedKmph"],
+    "precip_mm": slot["precipMM"],
+})
+
+Notes & limits
+
+The JSON endpoint format=j1 includes hourly data; j2 explicitly omits hourly. 
+GitHub
+
+Hourly granularity is 3-hour steps (00:00, 03:00, …, 21:00).
+
+Coverage is typically current + 3 forecast days only; no parameter for an arbitrary past date via wttr.in.
+
+me: how can i organize the response for weather data to show temperature and precipitation graph
+ai:Awesome question. Here’s a clean, reusable way to take fetch-my-weather output and produce hourly temperature and hourly precipitation graphs for a specific date.
+
+1) Get data (as raw JSON)
+from fetch_my_weather import get_weather
+
+raw = get_weather(location="Perth, Australia", format="raw_json")
+
+2) Convert to a tidy DataFrame for a chosen date
+from datetime import date
+import pandas as pd
+
+def hourly_df_from_raw(raw_json: dict, target_date: str | None = None) -> pd.DataFrame:
+    """
+    Build a tidy hourly dataframe for a specific date (YYYY-MM-DD)
+    from fetch-my-weather raw_json (wttr.in j1 format).
+    """
+    if target_date is None:
+        target_date = date.today().isoformat()
+
+    # Find the day that matches target_date
+    day = next((d for d in raw_json["weather"] if d["date"] == target_date), None)
+    if not day:
+        raise ValueError(f"No hourly data for {target_date}. Remember: only ~3 days are available.")
+
+    rows = []
+    for h in day["hourly"]:
+        # 'time' is in steps like "0","300","600",...,"2100"
+        t = h["time"].zfill(4)  # "0" -> "0000", "300" -> "0300"
+        ts = f"{target_date} {t[:2]}:{t[2:]}"
+        rows.append({
+            "timestamp": pd.to_datetime(ts),
+            "temp_C": float(h["tempC"]),
+            "feels_like_C": float(h["FeelsLikeC"]),
+            "precip_mm": float(h["precipMM"]),
+            "humidity_pct": float(h["humidity"]),
+            "wind_kmph": float(h["windspeedKmph"]),
+            "desc": h["weatherDesc"][0]["value"],
+        })
+
+    df = pd.DataFrame(rows).sort_values("timestamp").reset_index(drop=True)
+    return df
+
+# Example
+target = date.today().isoformat()  # or "2025-10-18"
+df_hourly = hourly_df_from_raw(raw, target)
+df_hourly.head()
+
+3) Plot graphs (one chart per figure, matplotlib only)
+import matplotlib.pyplot as plt
+
+def plot_hourly_temperature(df: pd.DataFrame, title: str = "Hourly Temperature (°C)"):
+    plt.figure()
+    plt.plot(df["timestamp"], df["temp_C"])
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel("Temperature (°C)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+def plot_hourly_precipitation(df: pd.DataFrame, title: str = "Hourly Precipitation (mm)"):
+    plt.figure()
+    plt.bar(df["timestamp"], df["precip_mm"])
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel("Precipitation (mm)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# Draw them
+plot_hourly_temperature(df_hourly, title=f"Hourly Temperature – {target}")
+plot_hourly_precipitation(df_hourly, title=f"Hourly Precipitation – {target}")
+
+Optional extras
+A) Overlay “feels like” (in a separate figure)
+def plot_hourly_feels_like(df: pd.DataFrame, title: str = "Hourly Feels Like (°C)"):
+    plt.figure()
+    plt.plot(df["timestamp"], df["feels_like_C"])
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel("Feels Like (°C)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+plot_hourly_feels_like(df_hourly, title=f"Hourly Feels Like – {target}")
+
+B) Daily summary (if you want a quick daily view across the 3 forecast days)
+def daily_summary_df(raw_json: dict) -> pd.DataFrame:
+    days = []
+    for d in raw_json["weather"]:
+        days.append({
+            "date": pd.to_datetime(d["date"]),
+            "max_temp_C": float(d["maxtempC"]),
+            "min_temp_C": float(d["mintempC"]),
+            "avg_temp_C": float(d["avgtempC"]),
+            "total_precip_mm": float(d.get("totalprecipMM", 0.0)),
+        })
+    return pd.DataFrame(days).sort_values("date")
+
+df_daily = daily_summary_df(raw)
+
+# One figure per chart:
+plt.figure()
+plt.plot(df_daily["date"], df_daily["max_temp_C"])
+plt.title("Daily Max Temperature (°C)")
+plt.xlabel("Date")
+plt.ylabel("Max Temp (°C)")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure()
+plt.bar(df_daily["date"], df_daily["total_precip_mm"])
+plt.title("Daily Total Precipitation (mm)")
+plt.xlabel("Date")
+plt.ylabel("Precipitation (mm)")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+Pro tips
+
+Hourly coverage is typically 3-hour steps and available for ~3 days (today + next 2). If you need a specific historical date, switch to a historical API (e.g., Meteostat).
+
+If you want to save the charts:
+
+plt.savefig("hourly_temp.png", dpi=150)
+
+
+If you’re building a report, you can also export df_hourly to CSV or Excel:
+
+df_hourly.to_csv("perth_hourly.csv", index=False)
